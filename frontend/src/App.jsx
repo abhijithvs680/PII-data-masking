@@ -1,17 +1,16 @@
 import { useState } from 'react'
 import './App.css'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002';
+const envUrl = import.meta.env.VITE_API_URL;
+const API_URL = envUrl !== undefined && envUrl !== '' ? envUrl : '';
 
 function App() {
   const [activeTab, setActiveTab] = useState('text')
   const [loading, setLoading] = useState(false)
-  
-  // Text State
+
   const [textInput, setTextInput] = useState('')
   const [textOutput, setTextOutput] = useState('')
-  
-  // File State
+
   const [selectedFile, setSelectedFile] = useState(null)
   const [resultImage, setResultImage] = useState(null)
   const [pdfReady, setPdfReady] = useState(false)
@@ -22,11 +21,7 @@ function App() {
     try {
       const formData = new FormData();
       formData.append('text', textInput);
-      
-      const response = await fetch(`${API_URL}/mask/text`, {
-        method: 'POST',
-        body: formData,
-      });
+      const response = await fetch(`${API_URL}/mask/text`, { method: 'POST', body: formData });
       const data = await response.json();
       setTextOutput(data.masked_text);
     } catch (err) {
@@ -42,30 +37,18 @@ function App() {
     setLoading(true);
     setResultImage(null);
     setPdfReady(false);
-    
     try {
       const formData = new FormData();
       formData.append('file', selectedFile);
-      
       const endpoint = type === 'image' ? '/mask/image' : '/mask/pdf';
-      
-      const response = await fetch(`${API_URL}${endpoint}`, {
-        method: 'POST',
-        body: formData,
-      });
-      
+      const response = await fetch(`${API_URL}${endpoint}`, { method: 'POST', body: formData });
       if (!response.ok) throw new Error('Server error');
-      
       const blob = await response.blob();
-      
       if (type === 'image') {
-        const imageUrl = URL.createObjectURL(blob);
-        setResultImage(imageUrl);
-      } else if (type === 'pdf') {
-        const pdfUrl = URL.createObjectURL(blob);
-        setPdfReady(pdfUrl);
+        setResultImage(URL.createObjectURL(blob));
+      } else {
+        setPdfReady(URL.createObjectURL(blob));
       }
-      
     } catch (err) {
       console.error(err);
       alert('Failed to process the file.');
@@ -82,55 +65,38 @@ function App() {
     }
   }
 
+  const switchTab = (tab) => {
+    setActiveTab(tab);
+    setSelectedFile(null);
+    setResultImage(null);
+    setPdfReady(false);
+  }
+
   return (
     <div className="app-container">
-      <div className="glass-panel">
+      <div className="card">
         <header>
-          <h1>Shield</h1>
-          <p className="subtitle">Enterprise PII Data Masking Gateway</p>
+          <h1>PII Data Masking</h1>
+          <p className="subtitle">Upload text, images, or PDFs to redact personal information.</p>
         </header>
 
         <div className="tabs">
-          <button 
-            className={`tab-btn ${activeTab === 'text' ? 'active' : ''}`}
-            onClick={() => setActiveTab('text')}
-          >
-            Text
-          </button>
-          <button 
-            className={`tab-btn ${activeTab === 'image' ? 'active' : ''}`}
-            onClick={() => setActiveTab('image')}
-          >
-            Image
-          </button>
-          <button 
-            className={`tab-btn ${activeTab === 'pdf' ? 'active' : ''}`}
-            onClick={() => setActiveTab('pdf')}
-          >
-            PDF Document
-          </button>
+          <button className={`tab-btn ${activeTab === 'text' ? 'active' : ''}`} onClick={() => switchTab('text')}>Text</button>
+          <button className={`tab-btn ${activeTab === 'image' ? 'active' : ''}`} onClick={() => switchTab('image')}>Image</button>
+          <button className={`tab-btn ${activeTab === 'pdf' ? 'active' : ''}`} onClick={() => switchTab('pdf')}>PDF</button>
         </div>
 
         <div className="workspace">
           {activeTab === 'text' && (
             <>
-              <textarea 
-                placeholder="Paste sensitive text here..."
-                value={textInput}
-                onChange={(e) => setTextInput(e.target.value)}
-              />
-              <button 
-                className="primary-btn"
-                onClick={handleTextMask}
-                disabled={loading || !textInput}
-              >
-                {loading ? <><span className="loader"></span> Masking...</> : 'Mask Text'}
+              <textarea placeholder="Paste text containing PII here..." value={textInput} onChange={(e) => setTextInput(e.target.value)} />
+              <button className="primary-btn" onClick={handleTextMask} disabled={loading || !textInput}>
+                {loading ? <><span className="loader"></span>Processing...</> : 'Mask Text'}
               </button>
-              
               {textOutput && (
                 <div className="result-box">
-                  <h3>Sanitized Result:</h3>
-                  <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6' }}>{textOutput}</p>
+                  <h3>Result</h3>
+                  <p style={{ whiteSpace: 'pre-wrap', lineHeight: '1.6', fontSize: '0.9rem' }}>{textOutput}</p>
                 </div>
               )}
             </>
@@ -139,27 +105,16 @@ function App() {
           {activeTab === 'image' && (
             <>
               <label className={`file-dropzone ${selectedFile ? 'has-file' : ''}`}>
-                <input 
-                  type="file" 
-                  accept="image/*"
-                  onChange={handleFileChange} 
-                  style={{ display: 'none' }} 
-                />
-                <p>{selectedFile ? selectedFile.name : 'Drag & drop an image or click to select'}</p>
+                <input type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
+                {selectedFile ? selectedFile.name : 'Click to select an image'}
               </label>
-              
-              <button 
-                className="primary-btn"
-                onClick={() => handleFileMask('image')}
-                disabled={loading || !selectedFile}
-              >
-                {loading ? <><span className="loader"></span> Scanning OCR...</> : 'Mask Image'}
+              <button className="primary-btn" onClick={() => handleFileMask('image')} disabled={loading || !selectedFile}>
+                {loading ? <><span className="loader"></span>Scanning...</> : 'Mask Image'}
               </button>
-
               {resultImage && (
                 <div className="result-box">
-                  <h3>Sanitized Image:</h3>
-                  <img src={resultImage} alt="Masked Result" className="preview-image" />
+                  <h3>Masked Image</h3>
+                  <img src={resultImage} alt="Masked" className="preview-image" />
                 </div>
               )}
             </>
@@ -168,29 +123,21 @@ function App() {
           {activeTab === 'pdf' && (
             <>
               <label className={`file-dropzone ${selectedFile ? 'has-file' : ''}`}>
-                <input 
-                  type="file" 
-                  accept="application/pdf"
-                  onChange={handleFileChange} 
-                  style={{ display: 'none' }} 
-                />
-                <p>{selectedFile ? selectedFile.name : 'Drag & drop a PDF or click to select'}</p>
+                <input type="file" accept="application/pdf" onChange={handleFileChange} style={{ display: 'none' }} />
+                {selectedFile ? selectedFile.name : 'Click to select a PDF'}
               </label>
-              
-              <button 
-                className="primary-btn"
-                onClick={() => handleFileMask('pdf')}
-                disabled={loading || !selectedFile}
-              >
-                {loading ? <><span className="loader"></span> Processing Pages...</> : 'Mask PDF'}
+              <button className="primary-btn" onClick={() => handleFileMask('pdf')} disabled={loading || !selectedFile}>
+                {loading ? <><span className="loader"></span>Processing...</> : 'Mask PDF'}
               </button>
-
               {pdfReady && (
                 <div className="result-box">
-                  <h3>Sanitization Complete!</h3>
-                  <a href={pdfReady} download={`masked_${selectedFile.name}`} className="primary-btn" style={{ display: 'inline-block', marginTop: '1rem', textDecoration: 'none' }}>
-                    Download Secure PDF
-                  </a>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <h3>Masked PDF Viewer</h3>
+                    <a href={pdfReady} download={`masked_${selectedFile.name}`} className="primary-btn" style={{ textDecoration: 'none', padding: '6px 16px', fontSize: '0.8rem' }}>
+                      Download
+                    </a>
+                  </div>
+                  <iframe src={pdfReady} width="100%" height="600px" style={{ border: '1px solid #ccc', borderRadius: '4px', backgroundColor: '#fff' }} title="PDF Viewer" />
                 </div>
               )}
             </>

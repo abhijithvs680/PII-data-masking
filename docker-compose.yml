@@ -20,4 +20,14 @@ services:
       - ./frontend:/app
       - /app/node_modules
     environment:
-      - VITE_API_URL=https://ms-presidio-analyzer.vizru-ras.com
+      - VITE_API_URL=
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    command: "http frontend:5173"
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    ports:
+      - "4040:4040"
+    depends_on:
+      - frontend

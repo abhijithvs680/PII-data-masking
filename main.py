@@ -273,10 +273,10 @@ async def mask_pdf_endpoint(file: UploadFile = File(...)):
                     # Check if the word box falls within the masked interval (overlap)
                     if box["start"] < end_idx and box["end"] > start_idx:
                         rect = fitz.Rect(box["x0"] - 2, box["y0"] - 2, box["x1"] + 2, box["y1"] + 2)
-                        page.add_redact_annot(rect, fill=(0, 0, 0)) # Clean black box mask
+                        page.add_redact_annot(rect, fill=(0, 0, 0))  # Black fill for redaction boxes
 
-        # Apply text masks natively to the layout page canvas surface
-        page.apply_redactions()
+        # Apply text masks - use white fill for the page background
+        page.apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE)
         
         # --- PHASE 2: OPTIMIZED EMBEDDED IMAGE PROCESSING ---
         image_list = page.get_images(full=True)
