@@ -14,7 +14,31 @@ print("Loading GLiNER model...")
 model = GLiNER.from_pretrained("urchade/gliner_small-v2.1")
 
 # Define the custom PII labels you want GLiNER to actively target
-PII_LABELS = ["person", "email", "phone number", "credit card", "organization", "location"]
+PII_LABELS = [
+    # Direct Identifiers
+    "person", "maiden name", "social security number", "passport number", 
+    "driver's license number", "taxpayer identification number", "mailing address", 
+    "email address", "phone number",
+    
+    # Financial Identifiers
+    "credit card number", "bank account number", "routing number", 
+    "digital wallet ID", "financial record",
+    
+    # Digital & Network Identifiers
+    "IP address", "MAC address", "device ID", "browser cookie", "social media handle",
+    
+    # Biometric & Health Identifiers (PHI)
+    "fingerprint", "retina scan", "facial geometry", "voiceprint",
+    "medical record number", "health insurance ID", "DNA profile",
+    
+    # Indirect / Quasi-Identifiers
+    "date of birth", "place of birth", "geolocation", "employer", 
+    "job title", "salary", "school attended", "graduation date", "degree",
+    "criminal record", "race", "ethnicity", "religious belief",
+    
+    # General fallback categories
+    "organization", "location"
+]
 
 
 # --- HELPER FUNCTIONS ---
